@@ -1,0 +1,11 @@
+Fold,Status1_TTP_-1_Coughs,Status1_TTP_Valid_Coughs,Status0_TTP_-1_Coughs,Status1_TTP_-1_Patients,Status1_TTP_Valid_Patients,Status0_TTP_-1_Patients
+fold_0.csv,0,80,523,0,7,38
+fold_1.csv,0,115,483,0,7,38
+fold_2.csv,0,71,474,0,7,38
+fold_3.csv,0,85,472,0,7,38
+fold_4.csv,0,62,528,0,7,38
+fold_5.csv,0,78,475,0,6,37
+fold_6.csv,0,73,431,0,7,38
+fold_7.csv,0,68,496,0,6,38
+fold_8.csv,0,126,468,0,8,36
+fold_9.csv,0,80,487,0,6,38
