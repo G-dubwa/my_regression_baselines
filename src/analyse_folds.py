@@ -28,7 +28,7 @@ for fold_file in sorted(os.listdir(folds_path)):
             how="left"
         )
 
-
+        # Counts for existing breakdown
         status1_ttp_neg1_coughs = ((merged["Status"] == 1) & (merged["Time_to_positivity"] == -1)).sum()
         status1_ttp_valid_coughs = ((merged["Status"] == 1) & (merged["Time_to_positivity"] != -1)).sum()
         status0_ttp_neg1_coughs = ((merged["Status"] == 0) & (merged["Time_to_positivity"] == -1)).sum()
@@ -37,21 +37,23 @@ for fold_file in sorted(os.listdir(folds_path)):
         status1_ttp_valid_patients = merged[((merged["Status"] == 1) & (merged["Time_to_positivity"] != -1))]["Patient_ID"].nunique()
         status0_ttp_neg1_patients = merged[((merged["Status"] == 0) & (merged["Time_to_positivity"] == -1))]["Patient_ID"].nunique()
 
+        # NEW: Mean and std of TTP (only valid TTPs)
+        valid_ttp = merged[merged["Time_to_positivity"] != -1]["Time_to_positivity"]
+        ttp_mean = valid_ttp.mean()
+        ttp_std = valid_ttp.std()
 
-        # Append row
+        # Append row to summary
         summary.append([
-    fold_file,
-    status1_ttp_neg1_coughs,
-    status1_ttp_valid_coughs,
-    status0_ttp_neg1_coughs,
-    status1_ttp_neg1_patients,
-    status1_ttp_valid_patients,
-    status0_ttp_neg1_patients
-])
-
-# Create summary DataFrame
-# Append row
-
+            fold_file,
+            status1_ttp_neg1_coughs,
+            status1_ttp_valid_coughs,
+            status0_ttp_neg1_coughs,
+            status1_ttp_neg1_patients,
+            status1_ttp_valid_patients,
+            status0_ttp_neg1_patients,
+            ttp_mean,
+            ttp_std
+        ])
 
 # Create summary DataFrame
 summary_df = pd.DataFrame(summary, columns=[
@@ -61,7 +63,9 @@ summary_df = pd.DataFrame(summary, columns=[
     "Status0_TTP_-1_Coughs",
     "Status1_TTP_-1_Patients",
     "Status1_TTP_Valid_Patients",
-    "Status0_TTP_-1_Patients"
+    "Status0_TTP_-1_Patients",
+    "TTP_Mean",
+    "TTP_Std"
 ])
 
 # Save to CSV
