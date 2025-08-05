@@ -1,13 +1,13 @@
 import itertools
 import random, torch
 from my_dataloader import get_data 
-from models import ResNet18Regression, LinearRegression
+from models import ResNet18Regression, LinearRegression, EfficientNetRegression, MobileNetRegression, SqueezeNetRegression, TinyCNNRegression
 from model_utility_functions import train_and_validate_model_k
 import numpy as np
 
 USE_GPU = True
 MODEL = "resnet" #resnet
-LOSS = "mse_resnet"
+LOSS = "mse_cnn"
 TEST_SETS = 10
 DEV_SETS = 10
 NUM_EPOCHS = 5
@@ -63,8 +63,21 @@ def main():
                 train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/stratified_folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
                 if MODEL == "lr":
                     model = LinearRegression(NUM_BINS).to(processor)
+                        
+                elif MODEL == "tiny":
+                    model = TinyCNNRegression().to(processor)
+
+                elif MODEL == "squeeze":
+                    model = SqueezeNetRegression().to(processor)
+
+                elif MODEL == "mobile":
+                    model = MobileNetRegression().to(processor)
+
                 elif MODEL == "resnet":
                     model = ResNet18Regression().to(processor)
+
+                elif MODEL == "efficient":
+                    model = EfficientNetRegression().to(processor)
 
                 (dev_mae, dev_rmse, dev_r2, dev_avg_loss,
                  test_mae, test_rmse, test_r2, test_avg_loss) = train_and_validate_model_k(model, train_set, dev_set, test_set, LEARNING_RATE, WEIGHT_DECAY, NUM_EPOCHS, processor)

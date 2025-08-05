@@ -122,7 +122,7 @@ class CoughDatasetCleaned(Dataset):
                 image_mean = image.mean(0)
                 return image_mean, label
 
-            elif self.loss == "mse_resnet":
+            elif self.loss == "mse_cnn":
                 return self.pad(self.standardize(self.repeat(image_raw))), label
 
     def repeat(self, image):
