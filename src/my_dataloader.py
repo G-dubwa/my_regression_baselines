@@ -91,7 +91,8 @@ class CoughDatasetCleaned(Dataset):
     def __init__(self, dataset, annotated_fold_file, image_folder, loss, mean, std):
         self.coughs = pd.read_csv(annotated_fold_file)
         self.TTP_data = pd.read_csv(TTP_FILE) 
-        self.coughs["Patient_ID"] = self.coughs["Cough_ID"].str.split("/").str[0]
+        self.TTP_data["Patient_ID"] = self.TTP_data["Patient_ID"].astype(str)
+        self.coughs["Patient_ID"] = self.coughs["Cough_ID"].str.split("/").str[0].astype(str)
         self.coughs = self.coughs.merge(
             self.TTP_data[["Patient_ID", "Time_to_positivity"]],
             on="Patient_ID",

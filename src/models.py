@@ -22,7 +22,7 @@ class LinearRegression(torch.nn.Module):
         z = self.linear(x).squeeze(-1)
         return z
 
- class TinyCNNRegression(torch.nn.Module):
+class TinyCNNRegression(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.net = torch.nn.Sequential(
