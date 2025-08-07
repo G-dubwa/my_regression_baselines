@@ -10,12 +10,12 @@ MODEL = "resnet" #resnet
 LOSS = "mse_cnn"
 TEST_SETS = 10
 DEV_SETS = 10
-NUM_EPOCHS = 32
+NUM_EPOCHS = 10
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4 
 DATASET = "cage"
-image_folder = "images"
+image_folder = "mel_spectrograms_128"
 log_file = "logs/folds.txt"
 
 NUM_CLASSES = 2
@@ -35,6 +35,7 @@ def log_fold(test, dev,
         )
 
 def main():
+    torch.cuda.empty_cache()
     dev_acc = 0
     test_acc = 0
     dev_auc = 0
@@ -60,7 +61,8 @@ def main():
     for test_fold in range(0,TEST_SETS):
         for dev_fold in range(0,DEV_SETS):
             if test_fold != dev_fold:
-                train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
+                train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/stratified_folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
+                
                 if MODEL == "lr":
                     model = LinearRegression(NUM_BINS).to(processor)
                         

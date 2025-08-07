@@ -48,7 +48,7 @@ class TinyCNNRegression(torch.nn.Module):
 class SqueezeNetRegression(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.base_model = squeezenet1_0(pretrained=False)
+        self.base_model = squeezenet1_0()
         self.base_model.classifier[1] = torch.nn.Conv2d(512, 1, kernel_size=1)
     
     def forward(self, x):
@@ -58,7 +58,7 @@ class SqueezeNetRegression(torch.nn.Module):
 class MobileNetRegression(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.base_model = mobilenet_v2(pretrained=False)
+        self.base_model = mobilenet_v2()
         self.base_model.classifier[1] = torch.nn.Linear(1280, 1)
     
     def forward(self, x):
@@ -79,7 +79,7 @@ class ResNet18Regression(torch.nn.Module):
 class EfficientNetRegression(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.base_model = efficientnet_b0(pretrained=False)
+        self.base_model = efficientnet_b0()
         self.base_model.classifier[1] = torch.nn.Linear(1280, 1)
 
     def forward(self, x):

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import wavfile
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
+import matplotlib.pyplot as plt
 
 TTP_FILE = "data/cage/TimeToPositivityDataset.csv"
 
@@ -88,24 +89,29 @@ class CoughDataset(Dataset):
         return image, target
 
 class CoughDatasetCleaned(Dataset):
-    def __init__(self, dataset, annotated_fold_file, image_folder, loss, mean, std):
+    def __init__(self, dataset, annotated_fold_file, image_folder, loss, mean, std, filter_invalid=True):
+        
         self.coughs = pd.read_csv(annotated_fold_file)
-        self.TTP_data = pd.read_csv(TTP_FILE) 
-        self.TTP_data["Patient_ID"] = self.TTP_data["Patient_ID"].astype(str)
-        self.coughs["Patient_ID"] = self.coughs["Cough_ID"].str.split("/").str[0].astype(str)
-        self.coughs = self.coughs.merge(
-            self.TTP_data[["Patient_ID", "Time_to_positivity"]],
-            on="Patient_ID",
-            how="left"
-        )
-        self.coughs = self.coughs[~((self.coughs["Status"] == 1) & (self.coughs["Time_to_positivity"] == -1))]
-        self.coughs = self.coughs.dropna(subset=["Time_to_positivity"])
-        self.coughs.reset_index(drop=True, inplace=True)
-        self.dataset = dataset
+
+        
+        required_cols = {"Cough_ID", "Status", "Time_to_positivity"}
+        missing_cols = required_cols - set(self.coughs.columns)
+        if missing_cols:
+            raise ValueError(f"Missing columns in {annotated_fold_file}: {missing_cols}")
+
+        
+        if filter_invalid:
+            self.coughs = self.coughs[~((self.coughs["Time_to_positivity"] == -1))] # (self.coughs["Status"] == 1) & 
+
+        
+        self.coughs = self.coughs.dropna(subset=["Time_to_positivity"]).reset_index(drop=True)
+
+        
         self.image_folder = image_folder
         self.loss = loss
         self.mean = mean
         self.std = std
+        self.dataset = dataset
     
     def __len__(self):
         return len(self.coughs)

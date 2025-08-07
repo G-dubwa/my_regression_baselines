@@ -27,7 +27,7 @@ def epoch_of_training(model, train_set, optimizer, criterion, processor):
         features = features.to(torch.float32).to(processor)
         logits = model(features)
         batch_loss = criterion(logits, targets)
-        cumulative_loss += batch_loss.item()
+        cumulative_loss += batch_loss.item() * features.size(0)
         total_samples += features.size(0)
 
         batch_loss.backward()
@@ -57,7 +57,7 @@ def evaluate_model(model, criterion, fold, processor):
             targets.extend(batch_targets.detach().cpu().numpy())
             logits.extend(batch_logits.detach().cpu().numpy())
             batch_loss = criterion(batch_logits, batch_targets)
-            cumulative_loss += batch_loss.item()
+            cumulative_loss += batch_loss.item() * batch_features.size(0)
             total_samples += batch_features.size(0)
 
     targets = np.array(targets)
@@ -77,8 +77,6 @@ def evaluate_model(model, criterion, fold, processor):
 def train_and_validate_model_k(model, train_set, dev_set, test_set, learning_rate, weight_decay, num_epochs, processor):
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = torch.nn.MSELoss()
-    
-
 
     for epoch in range(0, num_epochs):
         training_loss = epoch_of_training(model, train_set, optimizer, criterion, processor)
