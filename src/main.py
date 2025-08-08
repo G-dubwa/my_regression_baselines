@@ -6,7 +6,7 @@ from model_utility_functions import train_and_validate_model_k
 import numpy as np
 
 USE_GPU = True
-MODEL = "resnet" #resnet
+MODEL = "mobile" #resnet
 LOSS = "mse_cnn"
 TEST_SETS = 10
 DEV_SETS = 10
