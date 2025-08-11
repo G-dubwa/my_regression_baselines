@@ -3,11 +3,16 @@ from sklearn import metrics
 import numpy as np
 
 LOG_FILE = "logs/validation_per_epoch.txt"
-def log_epoch(epoch, training_loss, dev_mae, dev_rmse, dev_r2, dev_avg_loss,test_mae, test_rmse, test_r2, test_avg_loss, file_path):
-    with open(file_path,"a") as file:
+def log_epoch(epoch, training_loss,
+              dev_fold_id, dev_mae, dev_rmse, dev_r2, dev_avg_loss,
+              test_fold_id, test_mae, test_rmse, test_r2, test_avg_loss,
+              file_path):
+    with open(file_path, "a") as file:
         file.write(
-            f"epoch: {epoch}, training loss: {training_loss:.6f}, "
-            f"dev loss: {dev_avg_loss:.6f}, test loss: {test_avg_loss:.6f}, "
+            f"epoch: {epoch}, "
+            f"training loss: {training_loss:.6f}, "
+            f"dev fold: {dev_fold_id}, dev loss: {dev_avg_loss:.6f}, "
+            f"test fold: {test_fold_id}, test loss: {test_avg_loss:.6f}, "
             f"dev MAE: {dev_mae:.6f}, test MAE: {test_mae:.6f}, "
             f"dev RMSE: {dev_rmse:.6f}, test RMSE: {test_rmse:.6f}, "
             f"dev R2: {dev_r2:.6f}, test R2: {test_r2:.6f}\n"
@@ -74,7 +79,7 @@ def evaluate_model(model, criterion, fold, processor):
 
 
 
-def train_and_validate_model_k(model, train_set, dev_set, test_set, learning_rate, weight_decay, num_epochs, processor):
+def train_and_validate_model_k(model, train_set, dev_set, test_set,dev_fold,test_fold, learning_rate, weight_decay, num_epochs, processor):
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = torch.nn.MSELoss()
 
@@ -84,7 +89,10 @@ def train_and_validate_model_k(model, train_set, dev_set, test_set, learning_rat
             dev_mae, dev_rmse, dev_r2, dev_avg_loss = evaluate_model(model, criterion, dev_set, processor)
         if test_set is not None:
             test_mae, test_rmse, test_r2, test_avg_loss = evaluate_model(model, criterion, test_set, processor)
-        log_epoch(epoch, training_loss, dev_mae, dev_rmse, dev_r2, dev_avg_loss, test_mae, test_rmse, test_r2, test_avg_loss, LOG_FILE)
+        log_epoch(epoch, training_loss,
+            dev_fold, dev_mae, dev_rmse, dev_r2, dev_avg_loss,
+            test_fold, test_mae, test_rmse, test_r2, test_avg_loss,
+            LOG_FILE)
     
     return dev_mae, dev_rmse, dev_r2, dev_avg_loss, test_mae, test_rmse, test_r2, test_avg_loss
 

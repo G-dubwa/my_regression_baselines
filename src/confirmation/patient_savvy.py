@@ -1,39 +1,61 @@
 import os
+import re
 import pandas as pd
 
-# -----------------------------
+# -------------------------
 # CONFIG
-# -----------------------------
-FOLDS_DIR = "data/cage/stratified_folds"  # Adjust this to your fold directory
-FOLD_PREFIX = "fold_"  # prefix of the fold files
-NUM_FOLDS = 10  # total number of folds
+# -------------------------
+DATASET = "cage"
+INPUT_DIR = f"data/{DATASET}/stratified_folds"
+FOLDS = 10  # adjust if needed
 
-# -----------------------------
-# Load all fold data
-# -----------------------------
-patient_to_folds = {}
+# -------------------------
+# LOAD ALL FOLDS
+# -------------------------
+fold_files = sorted(
+    [f for f in os.listdir(INPUT_DIR) if re.match(r"fold_\d+\.csv$", f)],
+    key=lambda x: int(re.findall(r"\d+", x)[0])
+)
+if not fold_files:
+    raise FileNotFoundError(f"No fold_*.csv files found in {INPUT_DIR}")
 
-for i in range(NUM_FOLDS):
-    fold_path = os.path.join(FOLDS_DIR, f"{FOLD_PREFIX}{i}.csv")
-    df = pd.read_csv(fold_path)
+dfs = []
+for fold_num, file in enumerate(fold_files):
+    df_f = pd.read_csv(os.path.join(INPUT_DIR, file))
+    if "Patient_ID" not in df_f.columns:
+        if "Cough_ID" not in df_f.columns:
+            raise ValueError(f"{file} missing Cough_ID to derive Patient_ID")
+        df_f["Patient_ID"] = df_f["Cough_ID"].astype(str).str.split("/").str[0]
+    df_f["fold"] = fold_num
+    dfs.append(df_f)
 
-    # Extract Patient_ID from Cough_ID (assumes format "PatientID/whatever")
-    df["Patient_ID"] = df["Cough_ID"].str.split("/").str[0]
+df_all = pd.concat(dfs, ignore_index=True)
 
-    for pid in df["Patient_ID"]:
-        if pid not in patient_to_folds:
-            patient_to_folds[pid] = set()
-        patient_to_folds[pid].add(i)
-
-# -----------------------------
-# Check for duplicates
-# -----------------------------
-violating_patients = {pid: folds for pid, folds in patient_to_folds.items() if len(folds) > 1}
-
-if len(violating_patients) == 0:
-    print("✅ All patients are uniquely assigned to a single fold.")
+# -------------------------
+# CHECK 1: Unique Cough_ID
+# -------------------------
+dup_coughs = df_all[df_all.duplicated(subset=["Cough_ID"], keep=False)]
+if dup_coughs.empty:
+    print("✅ PASS: All Cough_IDs are unique across all folds")
 else:
-    print(f"❌ {len(violating_patients)} patients occur in multiple folds.")
-    print("\nExample violations:")
-    for pid, folds in list(violating_patients.items())[:10]:  # Show first 10
-        print(f" - Patient {pid} appears in folds: {sorted(folds)}")
+    print(f"❌ FAIL: Found {dup_coughs['Cough_ID'].nunique()} duplicate Cough_ID(s)")
+    print(dup_coughs.sort_values("Cough_ID").head())
+
+# -------------------------
+# CHECK 2: Each patient only in one fold
+# -------------------------
+patient_folds = df_all.groupby("Patient_ID")["fold"].nunique()
+leaky_patients = patient_folds[patient_folds > 1]
+if leaky_patients.empty:
+    print("✅ PASS: Each patient appears in only one fold")
+else:
+    print(f"❌ FAIL: {len(leaky_patients)} patients appear in multiple folds")
+    print(leaky_patients.head())
+
+# -------------------------
+# FINAL VERDICT
+# -------------------------
+if dup_coughs.empty and leaky_patients.empty:
+    print("\n🎯 All criteria satisfied.")
+else:
+    print("\n⚠ Please fix the above issues.")

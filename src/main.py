@@ -6,11 +6,12 @@ from model_utility_functions import train_and_validate_model_k
 import numpy as np
 
 USE_GPU = True
-MODEL = "mobile" #resnet
+#MODEL = "squeeze" #resnet
+models = ["squeeze","mobile","resnet"]
 LOSS = "mse_cnn"
 TEST_SETS = 10
 DEV_SETS = 10
-NUM_EPOCHS = 10
+NUM_EPOCHS = 32
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4 
@@ -57,38 +58,39 @@ def main():
         processor = torch.device("cuda")
     else:
         processor = torch.device("cpu")
-  
-    for test_fold in range(0,TEST_SETS):
-        for dev_fold in range(0,DEV_SETS):
-            if test_fold != dev_fold:
-                train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/stratified_folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
-                
-                if MODEL == "lr":
-                    model = LinearRegression(NUM_BINS).to(processor)
-                        
-                elif MODEL == "tiny":
-                    model = TinyCNNRegression().to(processor)
+        
+    for MODEL in models:
+        for test_fold in range(0,TEST_SETS):
+            for dev_fold in range(0,DEV_SETS):
+                if test_fold != dev_fold:
+                    train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/stratified_folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
+                    
+                    if MODEL == "lr":
+                        model = LinearRegression(NUM_BINS).to(processor)
+                            
+                    elif MODEL == "tiny":
+                        model = TinyCNNRegression().to(processor)
 
-                elif MODEL == "squeeze":
-                    model = SqueezeNetRegression().to(processor)
+                    elif MODEL == "squeeze":
+                        model = SqueezeNetRegression().to(processor)
 
-                elif MODEL == "mobile":
-                    model = MobileNetRegression().to(processor)
+                    elif MODEL == "mobile":
+                        model = MobileNetRegression().to(processor)
 
-                elif MODEL == "resnet":
-                    model = ResNet18Regression().to(processor)
+                    elif MODEL == "resnet":
+                        model = ResNet18Regression().to(processor)
 
-                elif MODEL == "efficient":
-                    model = EfficientNetRegression().to(processor)
+                    elif MODEL == "efficient":
+                        model = EfficientNetRegression().to(processor)
 
-                (dev_mae, dev_rmse, dev_r2, dev_avg_loss,
-                 test_mae, test_rmse, test_r2, test_avg_loss) = train_and_validate_model_k(model, train_set, dev_set, test_set, LEARNING_RATE, WEIGHT_DECAY, NUM_EPOCHS, processor)
-                
-                log_fold(test_fold, dev_fold,
-                         dev_mae, test_mae,
-                         dev_rmse, test_rmse,
-                         dev_r2, test_r2,
-                         log_file)
+                    (dev_mae, dev_rmse, dev_r2, dev_avg_loss,
+                    test_mae, test_rmse, test_r2, test_avg_loss) = train_and_validate_model_k(model, train_set, dev_set, test_set,dev_fold,test_fold, LEARNING_RATE, WEIGHT_DECAY, NUM_EPOCHS, processor)
+                    
+                    log_fold(test_fold, dev_fold,
+                            dev_mae, test_mae,
+                            dev_rmse, test_rmse,
+                            dev_r2, test_r2,
+                            log_file)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,4 @@
+model,combos_per_epoch,epochs_counted,final_epoch,final_dev_r2_mean,final_test_r2_mean,max_dev_epoch,max_dev_r2_mean,test_r2_at_max_dev_epoch,max_test_epoch,max_test_r2_mean,auc_dev_r2_mean,auc_test_r2_mean
+squeeze,90,32,31,-0.246151,-0.229426,16,-0.184847,-0.200498,10,-0.189791,-7.989592,-7.755176
+mobile,90,32,31,-0.665795,-0.609025,25,-0.597231,-0.591783,25,-0.591783,-36.930025,-36.295721
+resnet,90,32,31,-0.365076,-0.372801,3,-0.298048,-0.305699,3,-0.305699,-15.293523,-15.663919
