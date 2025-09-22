@@ -43,36 +43,89 @@ def epoch_of_training(model, train_set, optimizer, criterion, processor):
 
     return cumulative_loss/total_samples
     
-def evaluate_model(model, criterion, fold, processor):
+
+
+def evaluate_model(model, criterion, fold, device, ttp_censor_val=42.0):
+    """
+    Evaluates a single-head regression model when many labels are the censor value (e.g., 42).
+
+    Returns a dict with:
+      - loss: average criterion over all samples
+      - mae_all, rmse_all, r2_all: regression metrics on ALL targets (for continuity with past runs)
+      - mae_non42, rmse_non42, r2_non42: regression metrics ONLY on non-42 targets (the informative subset)
+      - auc_tbplus: ROC-AUC for classifying TB+ (non-42) vs TB- (42) using a simple score from predictions
+      - acc_tbplus: accuracy of that classification using a threshold at 42
+    """
     model.eval()
-    cumulative_loss = 0
-    total_samples = 0
-    
-    targets = []
-    logits = []
+    total_loss, n = 0.0, 0
+    all_targets, all_preds = [], []
 
     with torch.no_grad():
         for batch in fold:
-            batch_features, batch_targets = batch
-            batch_targets = batch_targets.to(torch.float).to(processor)
-            batch_features = batch_features.to(torch.float32).to(processor)
-            batch_logits = model(batch_features)
-            targets.extend(batch_targets.detach().cpu().numpy())
-            logits.extend(batch_logits.detach().cpu().numpy())
-            batch_loss = criterion(batch_logits, batch_targets)
-            cumulative_loss += batch_loss.item() * batch_features.size(0)
-            total_samples += batch_features.size(0)
+            x, y = batch
+            x = x.to(device=device, dtype=torch.float32)
+            y = y.to(device=device, dtype=torch.float32)
 
-    targets = np.array(targets)
-    logits = np.array(logits)
+            y_hat = model(x)
+            loss = criterion(y_hat, y)
 
-    mae = metrics.mean_absolute_error(targets, logits)
-    rmse = np.sqrt(metrics.mean_squared_error(targets, logits))
-    r2 = metrics.r2_score(targets, logits)
+            total_loss += loss.item() * x.size(0)
+            n += x.size(0)
 
-    avg_loss = cumulative_loss / total_samples
+            all_targets.append(y.detach().cpu().numpy())
+            all_preds.append(y_hat.detach().cpu().numpy())
 
-    return mae, rmse, r2, avg_loss
+    targets = np.concatenate(all_targets).reshape(-1)
+    preds   = np.concatenate(all_preds).reshape(-1)
+
+    # ---- Overall regression (includes 42s; keep for comparability) ----
+    mae_all  = metrics.mean_absolute_error(targets, preds)
+    rmse_all = np.sqrt(metrics.mean_squared_error(targets, preds))
+    # r2 can be undefined if variance is ~0; guard:
+    try:
+        r2_all = metrics.r2_score(targets, preds)
+    except Exception:
+        r2_all = np.nan
+
+    # ---- Regression only on informative (non-42) targets ----
+    mask_non42 = (targets != ttp_censor_val)
+    if mask_non42.any():
+        mae_non42  = metrics.mean_absolute_error(targets[mask_non42], preds[mask_non42])
+        rmse_non42 = np.sqrt(metrics.mean_squared_error(targets[mask_non42], preds[mask_non42]))
+        try:
+            r2_non42 = metrics.r2_score(targets[mask_non42], preds[mask_non42])
+        except Exception:
+            r2_non42 = np.nan
+    else:
+        mae_non42 = rmse_non42 = r2_non42 = np.nan
+
+    # ---- “Censor” classification metrics (is TB+?) ----
+    # Define TB+ label as target < 42 (non-censored):
+    y_cls_true = (targets != ttp_censor_val).astype(int)
+    # Score: lower predicted TTP => more likely TB+ (non-censored).
+    # A simple monotonic score is (ttp_censor_val - pred): higher => more TB+.
+    y_cls_score = (ttp_censor_val - preds)
+
+    # ROC-AUC (only if both classes present)
+    if y_cls_true.sum() > 0 and y_cls_true.sum() < len(y_cls_true):
+        auc_tbplus = metrics.roc_auc_score(y_cls_true, y_cls_score)
+    else:
+        auc_tbplus = np.nan
+
+    # Thresholded accuracy using 42 as the cutoff (predict TB+ if pred < 42)
+    y_cls_pred = (preds < ttp_censor_val).astype(int)
+    acc_tbplus = metrics.accuracy_score(y_cls_true, y_cls_pred) if not np.all(y_cls_true == y_cls_true[0]) else np.nan
+
+    avg_loss = total_loss / max(1, n)
+
+    return {
+        "loss": avg_loss,
+        "mae_all": mae_all, "rmse_all": rmse_all, "r2_all": r2_all,
+        "mae_non42": mae_non42, "rmse_non42": rmse_non42, "r2_non42": r2_non42,
+        "auc_tbplus": auc_tbplus, "acc_tbplus": acc_tbplus,
+        "n_total": int(n), "n_non42": int(mask_non42.sum())
+    }
+
 
 
 
