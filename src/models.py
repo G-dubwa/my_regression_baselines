@@ -1,7 +1,7 @@
 import torch 
 import numpy as np 
 from sklearn import metrics 
-from torchvision.models import resnet18, efficientnet_b0, mobilenet_v2, squeezenet1_0
+from torchvision.models import resnet18, efficientnet_b0, mobilenet_v2, squeezenet1_0, alexnet, AlexNet_Weights, ResNet18_Weights
 
 class LinearRegression(torch.nn.Module):
     """
@@ -66,9 +66,9 @@ class MobileNetRegression(torch.nn.Module):
 
 class ResNet18Regression(torch.nn.Module):
 
-    def __init__(self):
+    def __init__(self, weights=ResNet18_Weights.IMAGENET1K_V1):
         super().__init__()
-        self.base_model = resnet18()
+        self.base_model = resnet18(weights=weights)
         self.base_model.fc = torch.nn.Linear(512, 1)
     
     def forward(self, x):
@@ -86,3 +86,15 @@ class EfficientNetRegression(torch.nn.Module):
         return self.base_model(x).squeeze(-1)
 
 
+class AlexNetRegression(torch.nn.Module):
+    def __init__(self, weights=AlexNet_Weights.IMAGENET1K_V1):
+        super().__init__()
+        # Load ImageNet-pretrained AlexNet (set weights=None for random init)
+        self.base_model = alexnet(weights=weights)
+        # Replace the final classifier layer (4096 -> 1)
+        in_features = self.base_model.classifier[-1].in_features
+        self.base_model.classifier[-1] = torch.nn.Linear(in_features, 1)
+
+    def forward(self, x):
+        # Output shape: (N,) for convenience in regression losses
+        return self.base_model(x).squeeze(-1)

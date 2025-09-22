@@ -1,13 +1,13 @@
 import itertools
 import random, torch
 from my_dataloader import get_data 
-from models import ResNet18Regression, LinearRegression, EfficientNetRegression, MobileNetRegression, SqueezeNetRegression, TinyCNNRegression
+from models import ResNet18Regression, LinearRegression, EfficientNetRegression, MobileNetRegression, SqueezeNetRegression, TinyCNNRegression, AlexNetRegression
 from model_utility_functions import train_and_validate_model_k
 import numpy as np
 
 USE_GPU = True
 #MODEL = "squeeze" #resnet
-models = ["squeeze","mobile","resnet"]
+models = ["resnet"]
 LOSS = "mse_cnn"
 TEST_SETS = 10
 DEV_SETS = 10
@@ -16,11 +16,11 @@ BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4 
 DATASET = "cage"
-image_folder = "mel_spectrograms_128"
+image_folder = "utk_face_images"
 log_file = "logs/folds.txt"
 
 NUM_CLASSES = 2
-NUM_BINS = 128
+NUM_BINS = 48#128
 
 def log_fold(test, dev,
              dev_mae, test_mae,
@@ -63,7 +63,7 @@ def main():
         for test_fold in range(0,TEST_SETS):
             for dev_fold in range(0,DEV_SETS):
                 if test_fold != dev_fold:
-                    train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/stratified_folds',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
+                    train_set, dev_set, test_set = get_data(dataset=DATASET,data_folds='data/'+DATASET+'/final-utkface-fixed',test_fold=test_fold,dev_fold=dev_fold,image_folder="data/"+DATASET+'/'+image_folder,loss=LOSS,batch_size=BATCH_SIZE,num_outer_folds=10)
                     
                     if MODEL == "lr":
                         model = LinearRegression(NUM_BINS).to(processor)
@@ -82,6 +82,9 @@ def main():
 
                     elif MODEL == "efficient":
                         model = EfficientNetRegression().to(processor)
+
+                    elif MODEL == "alex":
+                        model = AlexNetRegression().to(processor)
 
                     (dev_mae, dev_rmse, dev_r2, dev_avg_loss,
                     test_mae, test_rmse, test_r2, test_avg_loss) = train_and_validate_model_k(model, train_set, dev_set, test_set,dev_fold,test_fold, LEARNING_RATE, WEIGHT_DECAY, NUM_EPOCHS, processor)

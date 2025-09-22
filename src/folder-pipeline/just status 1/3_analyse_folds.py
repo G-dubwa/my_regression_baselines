@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # Paths
-folds_path = "data/cage/stratified_folds"
+folds_path = "data/cage/data_folds"
 
 # Store summary rows
 summary = []

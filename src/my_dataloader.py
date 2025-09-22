@@ -79,7 +79,7 @@ class CoughDataset(Dataset):
         return len(self.targets)
 
     def __getitem__(self,idx):
-        target = self.targets["Status"][idx]
+        target = self.targets["TTP"][idx]
         path_to_image = os.path.join(self.image_folder, str(self.targets["Cough_ID"][idx])+".npy")
         image = torch.tensor(np.transpose(np.load(path_to_image)))
         image = image[:50,:]
@@ -94,17 +94,17 @@ class CoughDatasetCleaned(Dataset):
         self.coughs = pd.read_csv(annotated_fold_file)
 
         
-        required_cols = {"Cough_ID", "Status", "Time_to_positivity"}
+        required_cols = {"Cough_ID", "TTP"}
         missing_cols = required_cols - set(self.coughs.columns)
         if missing_cols:
             raise ValueError(f"Missing columns in {annotated_fold_file}: {missing_cols}")
 
         
         if filter_invalid:
-            self.coughs = self.coughs[~((self.coughs["Time_to_positivity"] == -1))] # (self.coughs["Status"] == 1) & 
+            self.coughs = self.coughs[~((self.coughs["TTP"] == -1))] # (self.coughs["Status"] == 1) & 
 
         
-        self.coughs = self.coughs.dropna(subset=["Time_to_positivity"]).reset_index(drop=True)
+        self.coughs = self.coughs.dropna(subset=["TTP"]).reset_index(drop=True)
 
         
         self.image_folder = image_folder
@@ -118,7 +118,7 @@ class CoughDatasetCleaned(Dataset):
     
     def __getitem__(self, idx):
         if self.dataset == "cage":
-            label = self.coughs["Time_to_positivity"][idx]
+            label = self.coughs["TTP"][idx]
             path_to_image = os.path.join(self.image_folder,str(self.coughs["Cough_ID"][idx])+".npy")
             image_raw = torch.tensor(np.transpose(np.load(path_to_image)))
 

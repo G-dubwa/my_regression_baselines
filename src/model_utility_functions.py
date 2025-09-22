@@ -46,8 +46,6 @@ def epoch_of_training(model, train_set, optimizer, criterion, processor):
 def evaluate_model(model, criterion, fold, processor):
     model.eval()
     cumulative_loss = 0
-    acc = 0
-    auc = 0
     total_samples = 0
     
     targets = []
